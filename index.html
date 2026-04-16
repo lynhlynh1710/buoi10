@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Danh sách sinh viên</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: Arial; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px;}
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center;}
+        th { background: #f2f2f2; }
+    </style>
+</head>
+<body>
+
+<h2>Danh sách sinh viên</h2>
+<input type="file" id="fileInput" />
+
+<table id="table">
+    <thead>
+        <tr>
+            <th>Họ tên</th>
+            <th>Mã SV</th>
+            <th>Email</th>
+            <th>Khóa</th>
+            <th>Khoa</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script>
+// 🔹 Mapping mã khoa
+function getFaculty(msv) {
+    let code = msv.substring(3,6);
+
+    if (code === "404") return "CNTT & Kinh tế số";
+    if (code === "401") return "Tài chính";
+    if (code === "402") return "Ngân hàng";
+    if (code === "403") return "Kế toán";
+    return "Khác";
+}
+
+// 🔹 Tạo email
+function createEmail(fullName, msv) {
+    let parts = fullName.toLowerCase().trim().split(/\s+/);
+    let firstName = parts[parts.length - 1];
+    let initials = parts.slice(0, parts.length - 1)
+                        .map(w => w[0])
+                        .join("");
+
+    return firstName + initials + "." + msv.toLowerCase() + "@hvnh.edu.vn";
+}
+
+// 🔹 Class SinhVien
+class SinhVien {
+    constructor(name, msv) {
+        this.name = name;
+        this.msv = msv;
+        this.email = createEmail(name, msv);
+        this.khoa = getFaculty(msv);
+        this.khoaHoc = "K" + msv.substring(0,2);
+    }
+}
+
+// 🔹 Đọc file Excel
+document.getElementById("fileInput").addEventListener("change", function(e) {
+    let file = e.target.files[0];
+    let reader = new FileReader();
+
+    reader.onload = function(e) {
+        let data = new Uint8Array(e.target.result);
+        let workbook = XLSX.read(data, {type: 'array'});
+
+        let sheet = workbook.Sheets[workbook.SheetNames[0]];
+        let json = XLSX.utils.sheet_to_json(sheet);
+
+        renderTable(json);
+    };
+
+    reader.readAsArrayBuffer(file);
+});
+
+// 🔹 Hiển thị bảng
+function renderTable(data) {
+    let tbody = document.querySelector("#table tbody");
+    tbody.innerHTML = "";
+
+    data.forEach(row => {
+        // ✅ SỬA Ở ĐÂY
+        let sv = new SinhVien(row["Họ tên"], row["Mã SV"]);
+
+        let tr = `
+            <tr>
+                <td>${sv.name}</td>
+                <td>${sv.msv}</td>
+                <td>${sv.email}</td>
+                <td>${sv.khoaHoc}</td>
+                <td>${sv.khoa}</td>
+            </tr>
+        `;
+
+        tbody.innerHTML += tr;
+    });
+}
+</script>
+
+</body>
+</html>
